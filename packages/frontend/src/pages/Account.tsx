@@ -12,15 +12,15 @@ import Pool from '../auth/UserPool'
 
 const AccountContext = createContext<IAccountContext>({
 	getSession() {
-		return new Promise((res, _) => res({}))
+		return new Promise((res, _) => res({} as ISessionResult))
 	},
-	authenticate(Username, Password) {
+	authenticate() {
 		return new Promise((res, _) => res({}))
 	}
 })
 
 interface IAccountContext {
-	getSession: () => Promise<object>
+	getSession: () => Promise<ISessionResult>
 	authenticate: (Username: string, Password: string) => Promise<object>
 	logout?: () => void
 }
@@ -33,13 +33,6 @@ interface IUserAttributes {
 	sub: string
 	email_verified: string
 	email: string
-}
-
-interface ISession {
-	idToken: CognitoIdToken
-	refreshToken: CognitoRefreshToken
-	accessToken: CognitoAccessToken
-	clockDrift: number
 }
 
 const Account = ({ children }: any) => {
