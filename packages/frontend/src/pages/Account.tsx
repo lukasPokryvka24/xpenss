@@ -2,22 +2,78 @@ import { createContext } from 'react'
 import {
 	CognitoUser,
 	AuthenticationDetails,
-	CognitoUserSession
+	CognitoUserSession,
+	CognitoUserAttribute,
+	CognitoIdToken,
+	CognitoRefreshToken,
+	CognitoAccessToken
 } from 'amazon-cognito-identity-js'
 import Pool from '../auth/UserPool'
 
-const AccountContext = createContext<object>({})
+const AccountContext = createContext<IAccountContext>({
+	getSession() {
+		return new Promise((res, _) => res({}))
+	},
+	authenticate(Username, Password) {
+		return new Promise((res, _) => res({}))
+	}
+})
+
+interface IAccountContext {
+	getSession: () => Promise<object>
+	authenticate: (Username: string, Password: string) => Promise<object>
+	logout?: () => void
+}
+
+interface ISessionResult extends IUserAttributes {
+	user: CognitoUser
+}
+
+interface IUserAttributes {
+	sub: string
+	email_verified: string
+	email: string
+}
+
+interface ISession {
+	idToken: CognitoIdToken
+	refreshToken: CognitoRefreshToken
+	accessToken: CognitoAccessToken
+	clockDrift: number
+}
 
 const Account = ({ children }: any) => {
-	const getSession = async () => {
+	const getSession = async (): Promise<ISessionResult> => {
 		return new Promise((resolve, reject) => {
 			const user = Pool.getCurrentUser()
 
 			if (!user) reject()
 
-			user?.getSession((err: null, session: CognitoUserSession) => {
+			user?.getSession(async (err: null, session: CognitoUserSession) => {
 				if (err) reject(err)
-				resolve(session)
+
+				const userAttributes: IUserAttributes = await new Promise(
+					(resolve, reject) => {
+						user.getUserAttributes(
+							(err, attributes: CognitoUserAttribute[] | undefined) => {
+								if (err) reject(err)
+
+								const results = {}
+								if (attributes) {
+									for (let attribute of attributes) {
+										const { Name, Value } = attribute
+										//@ts-ignore
+										results[Name] = Value
+									}
+									//@ts-ignore
+									resolve(results)
+								}
+							}
+						)
+					}
+				)
+				const result: ISessionResult = { user, ...session, ...userAttributes }
+				resolve(result)
 			})
 		})
 	}
@@ -26,7 +82,7 @@ const Account = ({ children }: any) => {
 		Username: string,
 		Password: string
 	): Promise<object> => {
-		return await new Promise((resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			const user = new CognitoUser({ Username, Pool })
 
 			const authDetails = new AuthenticationDetails({

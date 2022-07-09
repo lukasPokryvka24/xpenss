@@ -1,4 +1,3 @@
-import { CognitoUserSession } from 'amazon-cognito-identity-js'
 import { useContext, useEffect, useState } from 'react'
 import { AccountContext } from './Account'
 
@@ -8,7 +7,7 @@ const Status = () => {
 	const { getSession, logout } = useContext(AccountContext)
 
 	useEffect(() => {
-		getSession().then((session: CognitoUserSession) => {
+		getSession().then((session) => {
 			console.log('Session: ', session)
 			setStatus(true)
 		})
