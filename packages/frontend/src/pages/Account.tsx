@@ -42,32 +42,40 @@ const Account = ({ children }: any) => {
 
 			if (!user) reject()
 
-			user?.getSession(async (err: null, session: CognitoUserSession) => {
-				if (err) reject(err)
-
-				const userAttributes: IUserAttributes = await new Promise(
-					(resolve, reject) => {
-						user.getUserAttributes(
-							(err, attributes: CognitoUserAttribute[] | undefined) => {
-								if (err) reject(err)
-
-								const results = {}
-								if (attributes) {
-									for (let attribute of attributes) {
-										const { Name, Value } = attribute
-										//@ts-ignore
-										results[Name] = Value
+			user?.getSession(
+				async (err: Error | null, session: CognitoUserSession) => {
+					if (err) reject(err)
+					else {
+						const userAttributes: IUserAttributes = await new Promise(
+							(resolve, reject) => {
+								user.getUserAttributes(
+									(err, attributes: CognitoUserAttribute[] | undefined) => {
+										if (err) reject(err)
+										else {
+											const results = {}
+											if (attributes) {
+												for (let attribute of attributes) {
+													const { Name, Value } = attribute
+													//@ts-ignore
+													results[Name] = Value
+												}
+												//@ts-ignore
+												resolve(results)
+											}
+										}
 									}
-									//@ts-ignore
-									resolve(results)
-								}
+								)
 							}
 						)
+						const result: ISessionResult = {
+							user,
+							...session,
+							...userAttributes
+						}
+						resolve(result)
 					}
-				)
-				const result: ISessionResult = { user, ...session, ...userAttributes }
-				resolve(result)
-			})
+				}
+			)
 		})
 	}
 
